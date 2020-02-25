@@ -59,7 +59,7 @@ local function kits_set_gk(team_id, cfg)
         cfg.TightKit = tk
         log("ctx.kits.set_gk: enforcing TightKit=" .. tostring(tk))
     end
-    return org_kits_set_gk(team_id, modified_cfg)
+    return org_kits_set_gk(team_id, cfg)
 end
 
 local function set_kits(ctx, home_info, away_info)
