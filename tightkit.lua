@@ -1,7 +1,7 @@
 -- tightkit.lua
 -- global run-time enforcement of TightKit attribute for kits
 
-local version = "1.0"
+local version = "1.01"
 
 local tk_names = {
     [1]="On",    --> enforce TightKit=1 (On)
@@ -11,14 +11,6 @@ local tk = 1
 
 local org_kits_set
 local org_kits_set_gk
-
-local function table_copy(t)
-    local tcopy = {}
-    for k,v in pairs(t) do
-        tcopy[k] = v
-    end
-    return tcopy
-end
 
 local function load_ini(ctx)
     local settings = {}
@@ -43,14 +35,12 @@ local function save_ini(ctx)
 end
 
 local function kits_set(team_id, kit_id, cfg, home_or_away)
-    cfg = table_copy(cfg)
     cfg.TightKit = tk
     log("ctx.kits.set: enforcing TightKit=" .. tostring(tk))
     return org_kits_set(team_id, kit_id, cfg, home_or_away)
 end
 
 local function kits_set_gk(team_id, cfg)
-    cfg = table_copy(cfg)
     cfg.TightKit = tk
     log("ctx.kits.set_gk: enforcing TightKit=" .. tostring(tk))
     return org_kits_set_gk(team_id, cfg)
