@@ -1,13 +1,13 @@
 -- tightkit.lua
+-- global run-time enforcement of TightKit attribute for kits
 
 local version = "1.0"
 
-local tk_values = {
-    { nil, "Auto" },  --> do not modify TightKit attribute (do nothing)
-    { 0, "Off" },     --> enforce TightKit=Off
-    { 1, "On" },      --> enforce TightKit=On
+local tk_names = {
+    [1]="On",    --> enforce TightKit=1 (On)
+    [0]="Off",   --> enforce TightKit=0 (Off)
 }
-local tk_choice = 1
+local tk = 1
 
 local org_kits_set
 local org_kits_set_gk
@@ -38,36 +38,27 @@ end
 
 local function save_ini(ctx)
     local f = io.open(ctx.sider_dir .. "modules\\tightkit.ini", "wt")
-    f:write(string.format("TightKit=%s", tk_values[tk_choice][1]))
+    f:write(string.format("TightKit=%s", tk))
     f:close()
 end
 
 local function kits_set(team_id, kit_id, cfg, home_or_away)
-    local tk = tk_values[tk_choice][1]
-    if tk==0 or tk==1 then
-        cfg = table_copy(cfg)
-        cfg.TightKit = tk
-        log("ctx.kits.set: enforcing TightKit=" .. tostring(tk))
-    end
+    cfg = table_copy(cfg)
+    cfg.TightKit = tk
+    log("ctx.kits.set: enforcing TightKit=" .. tostring(tk))
     return org_kits_set(team_id, kit_id, cfg, home_or_away)
 end
 
 local function kits_set_gk(team_id, cfg)
-    local tk = tk_values[tk_choice][1]
-    if tk==0 or tk==1 then
-        cfg = table_copy(cfg)
-        cfg.TightKit = tk
-        log("ctx.kits.set_gk: enforcing TightKit=" .. tostring(tk))
-    end
+    cfg = table_copy(cfg)
+    cfg.TightKit = tk
+    log("ctx.kits.set_gk: enforcing TightKit=" .. tostring(tk))
     return org_kits_set_gk(team_id, cfg)
 end
 
 local function set_kits(ctx, home_info, away_info)
-    local tk = tk_values[tk_choice][1]
-    if tk==0 or tk==1 then
-        log("set_kits: enforcing TightKit=" .. tostring(tk))
-        return { TightKit=tk }, { TightKit=tk }
-    end
+    log("set_kits: enforcing TightKit=" .. tostring(tk))
+    return { TightKit=tk }, { TightKit=tk }
 end
 
 local function enforce_tight_kit(ctx, team_id, home_or_away)
@@ -80,27 +71,24 @@ end
 
 local function key_up(ctx, vkey)
     if vkey == 0x30 then
-        tk_choice = tk_choice % #tk_values + 1
+        tk = (tk + 1) % 2
         save_ini(ctx)
 
         -- refresh current kits
-        tk = tk_values[tk_choice][1]
-        if tk==0 or tk==1 then
-            if ctx.home_team then
-                enforce_tight_kit(ctx, ctx.home_team, 0)
-                ctx.kits.refresh(0)
-            end
-            if ctx.away_team then
-                enforce_tight_kit(ctx, ctx.away_team, 1)
-                ctx.kits.refresh(1)
-            end
+        if ctx.home_team then
+            enforce_tight_kit(ctx, ctx.home_team, 0)
+            ctx.kits.refresh(0)
+        end
+        if ctx.away_team then
+            enforce_tight_kit(ctx, ctx.away_team, 1)
+            ctx.kits.refresh(1)
         end
     end
 end
 
 local function overlay_on(ctx)
     return string.format("version %s | TightKit=%s (%s) | Press [0] - to toggle TightKit",
-        version, tk_values[tk_choice][1], tk_values[tk_choice][2])
+        version, tk, tk_names[tk])
 end
 
 local function finalize_kits(ctx)
@@ -109,14 +97,16 @@ local function finalize_kits(ctx)
 end
 
 local function init(ctx)
-    if ctx.kits then
-        org_kits_set = ctx.kits.set
-        org_kits_set_gk = ctx.kits.set_gk
-        ctx.kits.set = kits_set
-        ctx.kits.set_gk = kits_set_gk
+    if not ctx.kits then
+        error("ctx.kits not found. Upgrade your sider")
     end
+    org_kits_set = ctx.kits.set
+    org_kits_set_gk = ctx.kits.set_gk
+    ctx.kits.set = kits_set
+    ctx.kits.set_gk = kits_set_gk
+
     local ini = load_ini(ctx)
-    tk_choice = tk_values[ini.TightKit] or 1
+    tk = ini.TightKit or tk
     ctx.register("set_kits", set_kits)
     ctx.register("overlay_on", overlay_on)
     ctx.register("key_up", key_up)
