@@ -1,7 +1,10 @@
 -- tightkit.lua
 -- global run-time enforcement of TightKit attribute for kits
+-- author: juce, 2020
 
-local version = "1.01"
+local version = "1.02"
+
+local TOGGLE_KEY = { name="[0]", vkey=0x30 }
 
 local tk_names = {
     [1]="On",    --> enforce TightKit=1 (On)
@@ -51,7 +54,7 @@ local function set_kits(ctx, home_info, away_info)
     return { TightKit=tk }, { TightKit=tk }
 end
 
-local function enforce_tight_kit(ctx, team_id, home_or_away)
+local function update_kits(ctx, team_id, home_or_away)
     local kit_id = ctx.kits.get_current_kit_id(home_or_away)
     local cfg = ctx.kits.get(team_id, kit_id)
     ctx.kits.set(team_id, kit_id, cfg, home_or_away)
@@ -60,30 +63,30 @@ local function enforce_tight_kit(ctx, team_id, home_or_away)
 end
 
 local function key_up(ctx, vkey)
-    if vkey == 0x30 then
+    if vkey == TOGGLE_KEY.vkey then
         tk = (tk + 1) % 2
         save_ini(ctx)
 
         -- refresh current kits
         if ctx.home_team then
-            enforce_tight_kit(ctx, ctx.home_team, 0)
+            update_kits(ctx, ctx.home_team, 0)
             ctx.kits.refresh(0)
         end
         if ctx.away_team then
-            enforce_tight_kit(ctx, ctx.away_team, 1)
+            update_kits(ctx, ctx.away_team, 1)
             ctx.kits.refresh(1)
         end
     end
 end
 
 local function overlay_on(ctx)
-    return string.format("version %s | TightKit=%s (%s) | Press [0] - to toggle TightKit",
-        version, tk, tk_names[tk])
+    return string.format("version %s | TightKit=%s (%s) | Press %s - to toggle TightKit",
+        version, tk, tk_names[tk], TOGGLE_KEY.name)
 end
 
 local function finalize_kits(ctx)
-    enforce_tight_kit(ctx, ctx.home_team, 0)
-    enforce_tight_kit(ctx, ctx.away_team, 1)
+    update_kits(ctx, ctx.home_team, 0)
+    update_kits(ctx, ctx.away_team, 1)
 end
 
 local function init(ctx)
