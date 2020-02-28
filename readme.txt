@@ -1,3 +1,6 @@
+HOW TO INSTALL:
+~~~~~~~~~~~~~~~
+
 1. copy tightkit.lua into your sider's "modules" folder
 2. add this line to sider.ini:
 
